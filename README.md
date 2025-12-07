@@ -1,6 +1,7 @@
 # **nano11 🔬**
 
-A PowerShell script to build an even more heavily trimmed-down Windows 11 image.
+A PowerShell script to build an even more heavily trimmed-down Windows 11 image. The purpose of this fork is to add back essential windows features to allow a more useable experience
+
 
 ## **Introduction**
 
