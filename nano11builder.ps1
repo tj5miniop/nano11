@@ -101,39 +101,6 @@ Clear-Host
 
 $scratchDir = "$($env:SystemDrive)\scratchdir"
 $packagePatterns = @(
-    # --- Legacy Components & Optional Apps ---
-    "Microsoft-Windows-InternetExplorer-Optional-Package~",
-    "Microsoft-Windows-MediaPlayer-Package~",
-    "Microsoft-Windows-WordPad-FoD-Package~",
-    "Microsoft-Windows-StepsRecorder-Package~",
-    "Microsoft-Windows-MSPaint-FoD-Package~",
-    "Microsoft-Windows-SnippingTool-FoD-Package~",
-    "Microsoft-Windows-TabletPCMath-Package~",
-    "Microsoft-Windows-Xps-Xps-Viewer-Opt-Package~",
-    "Microsoft-Windows-PowerShell-ISE-FOD-Package~",
-    "OpenSSH-Client-Package~",
-
-    # --- Language & Input Features (Assumes primary language only) ---
-    "Microsoft-Windows-LanguageFeatures-Handwriting-$languageCode-Package~",
-    "Microsoft-Windows-LanguageFeatures-OCR-$languageCode-Package~",
-    "Microsoft-Windows-LanguageFeatures-Speech-$languageCode-Package~",
-    "Microsoft-Windows-LanguageFeatures-TextToSpeech-$languageCode-Package~",
-    "*IME-ja-jp*",
-    "*IME-ko-kr*",
-    "*IME-zh-cn*",
-    "*IME-zh-tw*",
-
-    # --- Core OS Features (Removal is aggressive and will break functionality) ---
-    "Windows-Defender-Client-Package~",
-    "Microsoft-Windows-Search-Engine-Client-Package~",
-    "Microsoft-Windows-Kernel-LA57-FoD-Package~",
-
-    # --- Security & Identity (Breaks these features) ---
-    "Microsoft-Windows-Hello-Face-Package~",
-    "Microsoft-Windows-Hello-BioEnrollment-Package~",
-    "Microsoft-Windows-BitLocker-DriveEncryption-FVE-Package~",
-    "Microsoft-Windows-TPM-WMI-Provider-Package~",
-
     # --- Accessibility Tools ---
     "Microsoft-Windows-Narrator-App-Package~",
     "Microsoft-Windows-Magnifier-App-Package~",
@@ -168,13 +135,6 @@ $winDir = "$scratchDir\Windows"
 Write-Host "Slimming the DriverStore... (removing non-essential driver classes)"
 $driverRepo = Join-Path -Path $winDir -ChildPath "System32\DriverStore\FileRepository"
 $patternsToRemove = @(
-    'prn*',      # Printer drivers (e.g., prnms001.inf, prnge001.inf)
-    'scan*',     # Scanner drivers
-    'mfd*',      # Multi-function device drivers
-    'wscsmd.inf*', # Smartcard readers
-    'tapdrv*',   # Tape drives
-    'rdpbus.inf*', # Remote Desktop virtual bus
-    'tdibth.inf*'  # Bluetooth Personal Area Network
 )
 
 # Get all driver packages and remove the ones matching the patterns
@@ -196,121 +156,13 @@ Remove-Item -Path "$scratchDir\Windows\System32\InputMethod\CHS" -Recurse -Force
 Remove-Item -Path "$scratchDir\Windows\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item -Path (Join-Path -Path $winDir -ChildPath "Web") -Recurse -Force -ErrorAction SilentlyContinue; Remove-Item -Path (Join-Path -Path $winDir -ChildPath "Help") -Recurse -Force -ErrorAction SilentlyContinue; Remove-Item -Path (Join-Path -Path $winDir -ChildPath "Cursors") -Recurse -Force -ErrorAction SilentlyContinue
 
-Write-Host "Removing Edge, WinRE, and OneDrive..."
+Write-Host "Removing Edge and OneDrive..."
 Remove-Item -Path "$scratchDir\Program Files (x86)\Microsoft\Edge*" -Recurse -Force 
 if ($architecture -eq 'amd64') { $folderPath = Get-ChildItem -Path "$scratchDir\Windows\WinSxS" -Filter "amd64_microsoft-edge-webview_31bf3856ad364e35*" -Directory | Select-Object -ExpandProperty FullName } 
 if ($folderPath) { Remove-Item -Path $folderPath -Recurse -Force  }
 Remove-Item -Path "$scratchDir\Windows\System32\Microsoft-Edge-Webview" -Recurse -Force
-Remove-Item -Path "$scratchDir\Windows\System32\Recovery\winre.wim" -Recurse -Force
-New-Item -Path "$scratchDir\Windows\System32\Recovery\winre.wim" -ItemType File -Force
 Remove-Item -Path "$scratchDir\Windows\System32\OneDriveSetup.exe" -Force 
 & 'dism' '/English' "/image:$scratchDir" '/Cleanup-Image' '/StartComponentCleanup' '/ResetBase' 
-
-Write-Host "Taking ownership of the WinSxS folder. This might take a while..."
-& 'takeown' '/f' "$mainOSDrive\scratchdir\Windows\WinSxS" '/r'
-& 'icacls' "$mainOSDrive\scratchdir\Windows\WinSxS" '/grant' "$($adminGroup.Value):(F)" '/T' '/C'
-Write-host "Complete!"
-$folderPath = Join-Path -Path $mainOSDrive -ChildPath "\scratchdir\Windows\WinSxS_edit"
-$sourceDirectory = "$mainOSDrive\scratchdir\Windows\WinSxS"
-$destinationDirectory = "$mainOSDrive\scratchdir\Windows\WinSxS_edit"
-New-Item -Path $folderPath -ItemType Directory
-if ($architecture -eq "amd64") {
-   $dirsToCopy = @(
-        "x86_microsoft.windows.common-controls_6595b64144ccf1df_*",
-        "x86_microsoft.windows.gdiplus_6595b64144ccf1df_*",    
-        "x86_microsoft.windows.i..utomation.proxystub_6595b64144ccf1df_*",
-        "x86_microsoft.windows.isolationautomation_6595b64144ccf1df_*",
-        "x86_microsoft-windows-s..ngstack-onecorebase_31bf3856ad364e35_*",
-        "x86_microsoft-windows-s..stack-termsrv-extra_31bf3856ad364e35_*",
-        "x86_microsoft-windows-servicingstack_31bf3856ad364e35_*",
-        "x86_microsoft-windows-servicingstack-inetsrv_*",
-        "x86_microsoft-windows-servicingstack-onecore_*",
-        "amd64_microsoft.vc80.crt_1fc8b3b9a1e18e3b_*",
-        "amd64_microsoft.vc90.crt_1fc8b3b9a1e18e3b_*",
-        "amd64_microsoft.windows.c..-controls.resources_6595b64144ccf1df_*",
-        "amd64_microsoft.windows.common-controls_6595b64144ccf1df_*",
-        "amd64_microsoft.windows.gdiplus_6595b64144ccf1df_*",
-        "amd64_microsoft.windows.i..utomation.proxystub_6595b64144ccf1df_*",
-        "amd64_microsoft.windows.isolationautomation_6595b64144ccf1df_*",
-        "amd64_microsoft-windows-s..stack-inetsrv-extra_31bf3856ad364e35_*",
-        "amd64_microsoft-windows-s..stack-msg.resources_31bf3856ad364e35_*",
-        "amd64_microsoft-windows-s..stack-termsrv-extra_31bf3856ad364e35_*",
-        "amd64_microsoft-windows-servicingstack_31bf3856ad364e35_*",
-        "amd64_microsoft-windows-servicingstack-inetsrv_31bf3856ad364e35_*",
-        "amd64_microsoft-windows-servicingstack-msg_31bf3856ad364e35_*",
-        "amd64_microsoft-windows-servicingstack-onecore_31bf3856ad364e35_*",
-        "Catalogs",
-        "FileMaps",
-        "Fusion",
-        "InstallTemp",
-        "Manifests",
-        "x86_microsoft.vc80.crt_1fc8b3b9a1e18e3b_*",
-        "x86_microsoft.vc90.crt_1fc8b3b9a1e18e3b_*",
-        "x86_microsoft.windows.c..-controls.resources_6595b64144ccf1df_*",
-        "x86_microsoft.windows.c..-controls.resources_6595b64144ccf1df_*"
-    )
- # Copy each directory
-   foreach ($dir in $dirsToCopy) {
-        $sourceDirs = Get-ChildItem -Path $sourceDirectory -Filter $dir -Directory
-        foreach ($sourceDir in $sourceDirs) {
-            $destDir = Join-Path -Path $destinationDirectory -ChildPath $sourceDir.Name
-            Write-Host "Copying $sourceDir.FullName to $destDir"
-            Copy-Item -Path $sourceDir.FullName -Destination $destDir -Recurse -Force
-        }
-    }
-}
- elseif ($architecture -eq "arm64") {
-     $dirsToCopy = @(
-        "arm64_microsoft-windows-servicingstack-onecore_31bf3856ad364e35_*",
-        "Catalogs"
-        "FileMaps"
-        "Fusion"
-        "InstallTemp"
-        "Manifests"
-        "SettingsManifests"
-        "Temp"
-        "x86_microsoft.vc80.crt_1fc8b3b9a1e18e3b_*"
-        "x86_microsoft.vc90.crt_1fc8b3b9a1e18e3b_*"
-        "x86_microsoft.windows.c..-controls.resources_6595b64144ccf1df_*"
-        "x86_microsoft.windows.common-controls_6595b64144ccf1df_*"
-        "x86_microsoft.windows.gdiplus_6595b64144ccf1df_*"
-        "x86_microsoft.windows.i..utomation.proxystub_6595b64144ccf1df_*"
-        "x86_microsoft.windows.isolationautomation_6595b64144ccf1df_*"
-        "arm_microsoft.windows.c..-controls.resources_6595b64144ccf1df_*"
-        "arm_microsoft.windows.common-controls_6595b64144ccf1df_*"
-        "arm_microsoft.windows.gdiplus_6595b64144ccf1df_*"
-        "arm_microsoft.windows.i..utomation.proxystub_6595b64144ccf1df_*"
-        "arm_microsoft.windows.isolationautomation_6595b64144ccf1df_*"
-        "arm64_microsoft.vc80.crt_1fc8b3b9a1e18e3b_*"
-        "arm64_microsoft.vc90.crt_1fc8b3b9a1e18e3b_*"
-        "arm64_microsoft.windows.c..-controls.resources_6595b64144ccf1df_*"
-        "arm64_microsoft.windows.common-controls_6595b64144ccf1df_*"
-        "arm64_microsoft.windows.gdiplus_6595b64144ccf1df_*"
-        "arm64_microsoft.windows.i..utomation.proxystub_6595b64144ccf1df_*"
-        "arm64_microsoft.windows.isolationautomation_6595b64144ccf1df_*"
-        "arm64_microsoft-windows-servicing-adm_31bf3856ad364e35_*"
-        "arm64_microsoft-windows-servicingcommon_31bf3856ad364e35_*"
-        "arm64_microsoft-windows-servicing-onecore-uapi_31bf3856ad364e35_*"
-        "arm64_microsoft-windows-servicingstack_31bf3856ad364e35_*"
-        "arm64_microsoft-windows-servicingstack-inetsrv_31bf3856ad364e35_*"
-        "arm64_microsoft-windows-servicingstack-msg_31bf3856ad364e35_*"
-    )
-}
-foreach ($dir in $dirsToCopy) {
-        $sourceDirs = Get-ChildItem -Path $sourceDirectory -Filter $dir -Directory
-        foreach ($sourceDir in $sourceDirs) {
-            $destDir = Join-Path -Path $destinationDirectory -ChildPath $sourceDir.Name
-            Write-Host "Copying $sourceDir.FullName to $destDir"
-            Copy-Item -Path $sourceDir.FullName -Destination $destDir -Recurse -Force
-        }
-    }  
-
-
-Write-Host "Deleting WinSxS. This may take a while..."
-        Remove-Item -Path $mainOSDrive\scratchdir\Windows\WinSxS -Recurse -Force
-
-Rename-Item -Path $mainOSDrive\scratchdir\Windows\WinSxS_edit -NewName $mainOSDrive\scratchdir\Windows\WinSxS
-Write-Host "Complete!"
 
 reg load HKLM\zCOMPONENTS $ScratchDisk\scratchdir\Windows\System32\config\COMPONENTS | Out-Null
 reg load HKLM\zDEFAULT $ScratchDisk\scratchdir\Windows\System32\config\default | Out-Null
@@ -401,48 +253,13 @@ $tasksPath = "C:\scratchdir\Windows\System32\Tasks"
 
 Write-Host "Deleting scheduled task definition files..."
 
-# Application Compatibility Appraiser
-Remove-Item -Path "$tasksPath\Microsoft\Windows\Application Experience\Microsoft Compatibility Appraiser" -Force -ErrorAction SilentlyContinue
-
 # Customer Experience Improvement Program (removes the entire folder and all tasks within it)
 Remove-Item -Path "$tasksPath\Microsoft\Windows\Customer Experience Improvement Program" -Recurse -Force -ErrorAction SilentlyContinue
 
 # Program Data Updater
 Remove-Item -Path "$tasksPath\Microsoft\Windows\Application Experience\ProgramDataUpdater" -Force -ErrorAction SilentlyContinue
 
-# Chkdsk Proxy
-Remove-Item -Path "$tasksPath\Microsoft\Windows\Chkdsk\Proxy" -Force -ErrorAction SilentlyContinue
-
-# Windows Error Reporting (QueueReporting)
-Remove-Item -Path "$tasksPath\Microsoft\Windows\Windows Error Reporting\QueueReporting" -Force -ErrorAction SilentlyContinue
-
 Write-Host "Task files have been deleted."
-Write-Host "Disabling Windows Update..."
-& 'reg' 'add' "HKLM\zSOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce" '/v' 'StopWUPostOOBE1' '/t' 'REG_SZ' '/d' 'net stop wuauserv' '/f'
-& 'reg' 'add' "HKLM\zSOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce" '/v' 'StopWUPostOOBE2' '/t' 'REG_SZ' '/d' 'sc stop wuauserv' '/f'
-& 'reg' 'add' "HKLM\zSOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce" '/v' 'StopWUPostOOBE3' '/t' 'REG_SZ' '/d' 'sc config wuauserv start= disabled' '/f'
-& 'reg' 'add' "HKLM\zSOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce" '/v' 'DisbaleWUPostOOBE1' '/t' 'REG_SZ' '/d' 'reg add HKLM\SYSTEM\CurrentControlSet\Services\wuauserv /v Start /t REG_DWORD /d 4 /f' '/f'
-& 'reg' 'add' "HKLM\zSOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce" '/v' 'DisbaleWUPostOOBE2' '/t' 'REG_SZ' '/d' 'reg add HKLM\SYSTEM\ControlSet001\Services\wuauserv /v Start /t REG_DWORD /d 4 /f' '/f'
-& 'reg' 'add' 'HKLM\zSOFTWARE\Policies\Microsoft\Windows\WindowsUpdate' '/v' 'DoNotConnectToWindowsUpdateInternetLocations' '/t' 'REG_DWORD' '/d' '1' '/f'
-& 'reg' 'add' 'HKLM\zSOFTWARE\Policies\Microsoft\Windows\WindowsUpdate' '/v' 'DisableWindowsUpdateAccess' '/t' 'REG_DWORD' '/d' '1' '/f' 
-& 'reg' 'add' 'HKLM\zSOFTWARE\Policies\Microsoft\Windows\WindowsUpdate' '/v' 'WUServer' '/t' 'REG_SZ' '/d' 'localhost' '/f' 
-& 'reg' 'add' 'HKLM\zSOFTWARE\Policies\Microsoft\Windows\WindowsUpdate' '/v' 'WUStatusServer' '/t' 'REG_SZ' '/d' 'localhost' '/f' 
-& 'reg' 'add' 'HKLM\zSOFTWARE\Policies\Microsoft\Windows\WindowsUpdate' '/v' 'UpdateServiceUrlAlternate' '/t' 'REG_SZ' '/d' 'localhost' '/f' 
-& 'reg' 'add' 'HKLM\zSOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU' '/v' 'UseWUServer' '/t' 'REG_DWORD' '/d' '1' '/f' 
-& 'reg' 'add' 'HKLM\zSOFTWARE\Microsoft\Windows\CurrentVersion\OOBE' '/v' 'DisableOnline' '/t' 'REG_DWORD' '/d' '1' '/f' 
-& 'reg' 'add' 'HKLM\zSYSTEM\ControlSet001\Services\wuauserv' '/v' 'Start' '/t' 'REG_DWORD' '/d' '4' '/f' 
-& 'reg' 'delete' 'HKLM\zSYSTEM\ControlSet001\Services\WaaSMedicSVC' '/f'
-& 'reg' 'delete' 'HKLM\zSYSTEM\ControlSet001\Services\UsoSvc' '/f'
-& 'reg' 'add' 'HKEY_LOCAL_MACHINE\zSOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU' '/v' 'NoAutoUpdate' '/t' 'REG_DWORD' '/d' '1' '/f'
-Write-Host "Disabling Windows Defender"
-$servicePaths = @(
-    "WinDefend",
-    "WdNisSvc",
-    "WdNisDrv",
-    "WdFilter",
-    "Sense"
-)
-
 foreach ($path in $servicePaths) {
     Set-ItemProperty -Path "HKLM:\zSYSTEM\ControlSet001\Services\$path" -Name "Start" -Value 4
 }
@@ -562,4 +379,5 @@ exit
 else {
     Write-Host "You chose not to continue. The script will now exit."
     exit
+
 }
