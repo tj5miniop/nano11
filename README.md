@@ -2,6 +2,10 @@
 
 A PowerShell script to build an even more heavily trimmed-down Windows 11 image. The purpose of this fork is to add back essential windows features to allow a more useable experience
 
+# Issues with ISO creation?
+The pure install.win is located in C:/nano11/sources/install.wim so you should be able to manually install or create an ISO yourself
+
+
 
 ## **Introduction**
 
